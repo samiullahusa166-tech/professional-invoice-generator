@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Invoice Generator</title>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- html2pdf.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5IfSuxQto8c51DYGE5ypVwLkUtXVOC5427GYYnLYKc6QSL42rQQrDYxZd12Yc7MEZBD63BWgA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+    <style>
+        :root {
+            --primary: #1e293b;
+            --primary-hover: #0f172a;
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --border-color: #e2e8f0;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --accent-danger: #ef4444;
+            --accent-danger-hover: #dc2626;
+            --accent-success: #10b981;
+            --accent-success-hover: #059669;
+            --accent-blue: #3b82f6;
+            --accent-blue-hover: #2563eb;
+            --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Top navigation header */
+        header {
+            background-color: var(--primary);
+            color: #ffffff;
+            padding: 1.25rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        header h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+        }
+
+        header p {
+            font-size: 0.875rem;
+            color: #cbd5e1;
+        }
+
+        /* Layout wrapper */
+        .app-container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 1024px) {
+            .app-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Editor Section */
+        .editor-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            height: fit-content;
+        }
+
+        .section-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-main);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.75rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1rem;
+        }
+
+        @media (max-width: 640px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-main);
+        }
+
+        input[type="text"],
+        input[type="date"],
+        input[type="number"] {
+            font-family: var(--font-family);
+            width: 100%;
+            padding: 0.625rem 0.875rem;
+            font-size: 0.95rem;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-main);
+            background-color: #ffffff;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+
+        /* Editor Table Styles */
+        .table-wrapper {
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+
+        .editor-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            text-align: left;
+        }
+
+        .editor-table th,
+        .editor-table td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .editor-table th {
+            background-color: #f8fafc;
+            font-weight: 600;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .editor-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .editor-table input[type="text"],
+        .editor-table input[type="number"] {
+            padding: 0.375rem 0.625rem;
+            font-size: 0.875rem;
+        }
+
+        .col-desc { width: 45%; }
+        .col-qty { width: 15%; }
+        .col-rate { width: 18%; }
+        .col-amount { width: 15%; text-align: right; font-weight: 500; }
+        .col-action { width: 7%; text-align: center; }
+
+        .btn-delete {
+            background: none;
+            border: none;
+            color: var(--accent-danger);
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 4px;
+            transition: background-color 0.15s ease, color 0.15s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-delete:hover {
+            background-color: #fef2f2;
+            color: var(--accent-danger-hover);
+        }
+
+        /* Buttons Panel */
+        .actions-panel {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-top: 0.5rem;
+        }
+
+        .btn {
+            font-family: var(--font-family);
+            font-size: 0.875rem;
+            font-weight: 500;
+            padding: 0.625rem 1.25rem;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: #ffffff;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-secondary {
+            background-color: #ffffff;
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background-color: #f1f5f9;
+            border-color: #cbd5e1;
+        }
+
+        .btn-danger {
+            background-color: var(--accent-danger);
+            color: #ffffff;
+        }
+
+        .btn-danger:hover {
+            background-color: var(--accent-danger-hover);
+        }
+
+        .btn-success {
+            background-color: var(--accent-success);
+            color: #ffffff;
+        }
+
+        .btn-success:hover {
+            background-color: var(--accent-success-hover);
+        }
+
+        /* Live Preview Section */
+        .preview-section {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .preview-header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 0.5rem;
+        }
+
+        .preview-header-bar h2 {
+            font-size: 1.125rem;
+            font-weight: 600;
+        }
+
+        .badge-live {
+            background-color: #ecfdf5;
+            color: #065f46;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.25rem 0.625rem;
+            border-radius: 9999px;
+            border: 1px solid #a7f3d0;
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+        }
+
+        .badge-live::before {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            background-color: var(--accent-success);
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); opacity: 0.5; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.5; }
+        }
+
+        /* Paper Sheet Layout */
+        .paper-invoice-wrapper {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+            padding: 2.5rem;
+            aspect-ratio: 1 / 1.414; /* A4 aspect ratio */
+            display: flex;
+            flex-direction: column;
+            color: #000000;
+            background-color: #ffffff;
+            box-sizing: border-box;
+        }
+
+        /* Styled Wholesale Invoice Content */
+        .invoice-sheet {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            background: #ffffff;
+        }
+
+        .invoice-header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+            border-bottom: 2px solid #000000;
+            padding-bottom: 1.25rem;
+        }
+
+        .invoice-title {
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: #000000;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+            margin-bottom: 0.5rem;
+            word-wrap: break-word;
+        }
+
+        .invoice-date {
+            font-size: 1.05rem;
+            font-weight: 500;
+            color: #333333;
+        }
+
+        /* Preview Table Styles */
+        .invoice-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 2rem;
+        }
+
+        .invoice-table th,
+        .invoice-table td {
+            border: 1px solid #000000;
+            padding: 0.625rem 0.875rem;
+            font-size: 0.95rem;
+            color: #000000;
+        }
+
+        .invoice-table th {
+            font-weight: 700;
+            text-transform: uppercase;
+            background-color: #f3f4f6;
+            font-size: 0.875rem;
+        }
+
+        .invoice-table td.text-left, .invoice-table th.text-left {
+            text-align: left;
+        }
+
+        .invoice-table td.text-center, .invoice-table th.text-center {
+            text-align: center;
+        }
+
+        .invoice-table td.text-right, .invoice-table th.text-right {
+            text-align: right;
+        }
+
+        .invoice-table tr.total-row td {
+            font-weight: 700;
+            background-color: #ffffff;
+            border-top: 2px solid #000000;
+            border-bottom: 2px solid #000000;
+        }
+
+        /* Printable footer section */
+        .invoice-footer {
+            margin-top: auto;
+            border-top: 1px dashed #cccccc;
+            padding-top: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+            color: #666666;
+        }
+
+        /* Screen-only utility classes */
+        .screen-only {
+            display: inherit;
+        }
+
+        /* Print Media Stylesheet */
+        @media print {
+            body {
+                background: #ffffff !important;
+                color: #000000 !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+
+            header,
+            .editor-section,
+            .preview-header-bar,
+            .actions-panel,
+            .screen-only,
+            .btn-delete,
+            td.col-action,
+            th.col-action {
+                display: none !important;
+            }
+
+            .app-container {
+                display: block !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                gap: 0 !important;
+            }
+
+            .preview-section {
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            .paper-invoice-wrapper {
+                border: none !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                background: #ffffff !important;
+                width: 100% !important;
+                height: auto !important;
+                aspect-ratio: auto !important;
+            }
+
+            .invoice-table th {
+                background-color: #f3f4f6 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header navigation banner -->
+    <header class="screen-only">
+        <div>
+            <h1>Professional Invoice Generator</h1>
+            <p>Create clean, print-ready wholesale supply invoices</p>
+        </div>
+        <div>
+            <p id="system-time">Loading system time...</p>
+        </div>
+    </header>
+
+    <!-- App layout grid container -->
+    <main class="app-container">
+        
+        <!-- EDITOR PANEL -->
+        <section class="editor-section screen-only">
+            <div class="section-title">
+                <span>Invoice Details</span>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="input-business-name">Business Name</label>
+                    <input type="text" id="input-business-name" value="ZAMAN MARKETING MANSEHRA" placeholder="Enter Business Title">
+                </div>
+                <div class="form-group">
+                    <label for="input-date">Invoice Date</label>
+                    <input type="date" id="input-date">
+                </div>
+            </div>
+
+            <div class="section-title" style="margin-top: 1rem;">
+                <span>Products & Pricing</span>
+                <button type="button" class="btn btn-secondary" style="padding: 0.375rem 0.75rem; font-size: 0.8rem;" onclick="addProductRow()">+ Add Product</button>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="editor-table" id="editor-products-table">
+                    <thead>
+                        <tr>
+                            <th class="col-desc">Product Description</th>
+                            <th class="col-qty">Quantity</th>
+                            <th class="col-rate">Rate</th>
+                            <th class="col-amount">Total</th>
+                            <th class="col-action"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="editor-table-body">
+                        <!-- Dynamic item rows will be injected here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Action buttons panel -->
+            <div class="actions-panel">
+                <button type="button" class="btn btn-primary" onclick="generatePreview()">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                    Refresh Preview
+                </button>
+                <button type="button" class="btn btn-success" onclick="downloadPDF()">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    Download PDF
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="printInvoice()">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                    Print Invoice
+                </button>
+                <button type="button" class="btn btn-danger" onclick="clearInvoice()" style="margin-left: auto;">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    Clear All
+                </button>
+            </div>
+        </section>
+
+        <!-- LIVE PRINT PREVIEW PANEL -->
+        <section class="preview-section">
+            <div class="preview-header-bar screen-only">
+                <h2>Invoice Print Preview</h2>
+                <span class="badge-live">Live Preview</span>
+            </div>
+
+            <!-- Paper Container representing the final printed invoice -->
+            <div class="paper-invoice-wrapper" id="invoice-preview-container">
+                <div class="invoice-sheet" id="invoice-sheet-print">
+                    
+                    <!-- Header -->
+                    <div class="invoice-header">
+                        <div class="invoice-title" id="preview-business-name">ZAMAN MARKETING MANSEHRA</div>
+                        <div class="invoice-date">Date: <span id="preview-date">06/07/2026</span></div>
+                    </div>
+
+                    <!-- Products Table -->
+                    <table class="invoice-table">
+                        <thead>
+                            <tr>
+                                <th class="text-left" style="width: 50%;">Product Description</th>
+                                <th class="text-center" style="width: 15%;">Quantity</th>
+                                <th class="text-right" style="width: 15%;">Rate</th>
+                                <th class="text-right" style="width: 20%;">Total Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody id="preview-table-body">
+                            <!-- Preview rows dynamically updated -->
+                        </tbody>
+                        <tfoot>
+                            <tr class="total-row">
+                                <td class="text-left">Total</td>
+                                <td class="text-center" id="preview-total-qty">0</td>
+                                <td class="text-right"></td>
+                                <td class="text-right" id="preview-grand-total">0</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+
+                    <!-- Minimal Professional Invoice Footer -->
+                    <div class="invoice-footer">
+                        <span>Generated via Professional Invoice Generator</span>
+                        <span>Thank you for your business!</span>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- App Logic Scripts -->
+    <script>
+        // Default items corresponding to Zaman Marketing Mansehra invoice
+        const defaultItems = [
+            { description: "Nimko Rs 50", quantity: 76, rate: 475 },
+            { description: "Dal Chana Rs 10", quantity: 40, rate: 384 },
+            { description: "Dal Bhujia Rs 10", quantity: 40, rate: 384 },
+            { description: "Slanty Rs 20", quantity: 152, rate: 580 },
+            { description: "Majic Puff Rs 10", quantity: 100, rate: 393 },
+            { description: "BarBeta Rs 20", quantity: 114, rate: 775 },
+            { description: "Barbeta Rs 50", quantity: 133, rate: 475 },
+            { description: "Wafer Rs 10", quantity: 20, rate: 2025 }
+        ];
+
+        // Format dates as DD/MM/YYYY
+        function formatDate(dateObj) {
+            const day = String(dateObj.getDate()).padStart(2, '0');
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const year = dateObj.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+
+        // Format raw numbers to comma separated values
+        function formatCommas(num) {
+            if (num === null || num === undefined || isNaN(num)) return "0";
+            return new Intl.NumberFormat('en-US', {
+                maximumFractionDigits: 2,
+                minimumFractionDigits: 0
+            }).format(num);
+        }
+
+        // Initialize App
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set date inputs
+            const dateInput = document.getElementById('input-date');
+            const today = new Date();
+            
+            // Format today's date as YYYY-MM-DD for date input
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            dateInput.value = `${year}-${month}-${day}`;
+            
+            // Set live system time in top nav
+            const systemTimeEl = document.getElementById('system-time');
+            if (systemTimeEl) {
+                systemTimeEl.textContent = `Today: ${formatDate(today)}`;
+            }
+
+            // Bind global header change listeners
+            const bizNameInput = document.getElementById('input-business-name');
+            bizNameInput.addEventListener('input', () => {
+                document.getElementById('preview-business-name').textContent = bizNameInput.value || "INVOICE";
+            });
+
+            dateInput.addEventListener('change', () => {
+                if (dateInput.value) {
+                    const parsedDate = new Date(dateInput.value);
+                    document.getElementById('preview-date').textContent = formatDate(parsedDate);
+                } else {
+                    document.getElementById('preview-date').textContent = "";
+                }
+            });
+
+            // Set default date preview
+            document.getElementById('preview-date').textContent = formatDate(today);
+
+            // Load default items
+            loadInvoiceItems(defaultItems);
+        });
+
+        // Load an array of items into the tables
+        function loadInvoiceItems(items) {
+            const tableBody = document.getElementById('editor-table-body');
+            tableBody.innerHTML = '';
+            
+            items.forEach(item => {
+                addProductRow(item.description, item.quantity, item.rate);
+            });
+
+            updateTotals();
+        }
+
+        // Add a new row to the editor
+        function addProductRow(description = "", quantity = "", rate = "") {
+            const tableBody = document.getElementById('editor-table-body');
+            const rowId = 'row-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+            
+            const tr = document.createElement('tr');
+            tr.id = rowId;
+            tr.className = 'editor-product-row';
+            tr.innerHTML = `
+                <td>
+                    <input type="text" class="input-row-desc" value="${description}" placeholder="Product name" oninput="updateTotals()">
+                </td>
+                <td>
+                    <input type="number" class="input-row-qty" value="${quantity}" placeholder="0" min="0" oninput="updateTotals()">
+                </td>
+                <td>
+                    <input type="number" class="input-row-rate" value="${rate}" placeholder="0.00" min="0" step="any" oninput="updateTotals()">
+                </td>
+                <td class="col-amount">
+                    <span class="row-total-amount-label">0</span>
+                </td>
+                <td class="col-action">
+                    <button type="button" class="btn-delete" onclick="deleteProductRow('${rowId}')" title="Delete Row">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    </button>
+                </td>
+            `;
+            
+            tableBody.appendChild(tr);
+            updateTotals();
+        }
+
+        // Delete a row
+        function deleteProductRow(rowId) {
+            const row = document.getElementById(rowId);
+            if (row) {
+                row.remove();
+                updateTotals();
+            }
+        }
+
+        // Update calculations and refresh live preview
+        function updateTotals() {
+            const rows = document.querySelectorAll('.editor-product-row');
+            const previewTableBody = document.getElementById('preview-table-body');
+            
+            // Clear preview table body
+            previewTableBody.innerHTML = '';
+            
+            let totalQty = 0;
+            let grandTotalAmt = 0;
+            
+            rows.forEach(row => {
+                const desc = row.querySelector('.input-row-desc').value || "";
+                const qtyVal = parseFloat(row.querySelector('.input-row-qty').value) || 0;
+                const rateVal = parseFloat(row.querySelector('.input-row-rate').value) || 0;
+                
+                // Calculate row total
+                const rowTotal = qtyVal * rateVal;
+                
+                // Update editor total label
+                row.querySelector('.row-total-amount-label').textContent = formatCommas(rowTotal);
+                
+                // Accumulate totals
+                totalQty += qtyVal;
+                grandTotalAmt += rowTotal;
+                
+                // Create corresponding live preview row
+                const previewTr = document.createElement('tr');
+                previewTr.innerHTML = `
+                    <td class="text-left">${desc || '<span style="color:#a1a1aa; font-style:italic;">New Product</span>'}</td>
+                    <td class="text-center">${qtyVal > 0 ? formatCommas(qtyVal) : ''}</td>
+                    <td class="text-right">${rateVal > 0 ? formatCommas(rateVal) : ''}</td>
+                    <td class="text-right">${rowTotal > 0 ? formatCommas(rowTotal) : '0'}</td>
+                `;
+                previewTableBody.appendChild(previewTr);
+            });
+
+            // Update footer totals in preview
+            document.getElementById('preview-total-qty').textContent = formatCommas(totalQty);
+            document.getElementById('preview-grand-total').textContent = formatCommas(grandTotalAmt);
+        }
+
+        // Force reload and refresh preview manually if needed
+        function generatePreview() {
+            updateTotals();
+            // Scroll to preview container on mobile screens
+            document.getElementById('invoice-preview-container').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Download A4 PDF using html2pdf
+        function downloadPDF() {
+            updateTotals();
+            const element = document.getElementById('invoice-sheet-print');
+            const businessName = document.getElementById('input-business-name').value || 'invoice';
+            const cleanName = businessName.toLowerCase().replace(/[^a-z0-9]+/g, '_');
+            
+            // Customize PDF options
+            const opt = {
+                margin:       [15, 15, 15, 15],
+                filename:     `${cleanName}_invoice.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            // Download
+            html2pdf().set(opt).from(element).save();
+        }
+
+        // Print Invoice via system dialog
+        function printInvoice() {
+            updateTotals();
+            window.print();
+        }
+
+        // Clear all fields and items
+        function clearInvoice() {
+            if (confirm("Are you sure you want to clear the entire invoice?")) {
+                document.getElementById('input-business-name').value = '';
+                document.getElementById('preview-business-name').textContent = 'INVOICE';
+                
+                // Clear table rows
+                const tableBody = document.getElementById('editor-table-body');
+                tableBody.innerHTML = '';
+                
+                updateTotals();
+            }
+        }
+    </script>
+</body>
+</html>
